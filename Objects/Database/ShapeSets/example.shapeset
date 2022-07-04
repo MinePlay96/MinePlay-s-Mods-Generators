@@ -1,0 +1,30 @@
+{
+   "blockList" : [
+      {
+			"uuid": "9b42d437-8be2-4b7a-8fa6-efb8a131ea68",
+			"name": "obj_interactive_logicgate",
+			"legacyId": 119,
+			"renderable": "$GAME_DATA/Objects/Renderable/Interactive/obj_interactive_logicgate.rend",
+			"color": "df7f01",
+			"box": {
+				"x": 1,
+				"y": 1,
+				"z": 1
+			},
+			"scripted": {
+				"filename": "$MOD_DATA/Scripts/Lamp.lua",
+				"classname": "Lamp"
+			},
+			"rotationSet": "PropYZ",
+			"physicsMaterial": "Mechanical",
+			"ratings": {
+				"density": 2,
+				"durability": 3,
+				"friction": 5,
+				"buoyancy": 2
+			},
+			"flammable": false,
+			"stackSize": 10
+		}
+   ]
+}
