@@ -1,12 +1,12 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <MyGUI type="Resource" version="1.1">
     <Resource type="ResourceImageSet" name="ItemIconsSet0">
-        <Group name="ItemIcons" texture="IconMap.png" size="96 96">
+        <Group name="IconMapSurvival" texture="IconMapSurvival.png" size="96 96">
             <Index name="Empty">
                 <Frame point="0 0"/>
             </Index>
-            <Index name="713c3190-8726-4333-9213-897cfbb17cc0">
-                <Frame point="0 0"/>
+            <Index name="9b42d437-8be2-4b7a-8fa6-efb8a131ea68">
+                <Frame point="672 96"/>
             </Index>
         </Group>
     </Resource>

@@ -1,0 +1,48 @@
+{
+	"partList": [
+		{
+			"name": "obj_interactive_solar_panel",
+			"uuid": "713c3190-8726-4333-9213-897cfbb17cc0",
+			"showInInventory": true,
+			"renderable": "$SURVIVAL_DATA/Character/Char_Craftbot/char_craftbot.rend",
+			"color": "df7f01",
+			"hull": {
+				"x": 10,
+				"y": 8,
+				"z": 9,
+				"col": "$SURVIVAL_DATA/Objects/Collision/char_craftbot_col.obj"
+			},
+			"scripted": {
+				"classname": "SolarPanel",
+				"filename": "$CONTENT_DATA/Scripts/SolarPanel.lua"
+			},
+			"rotationSet": "PropY",
+			"sticky": "-Z+Y-Y+X-X",
+			"physicsMaterial": "Metal",
+			"ratings": {
+				"density": 7,
+				"durability": 7,
+				"friction": 6,
+				"buoyancy": 1
+			},
+			"flammable": false,
+			"pipe": {
+				"openings": [
+					{
+						"side": "+X",
+						"x": 5.0,
+						"y": -2.5,
+						"z": 0.0
+					},
+					{
+						"side": "-X",
+						"x": -5.0,
+						"y": -2.5,
+						"z": 0.0
+					}
+				]
+			},
+			"carryItem": true
+		}
+	]
+}
