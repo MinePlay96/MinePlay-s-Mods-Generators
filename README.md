@@ -1,1 +1,1 @@
-# Solar-Panel-Scrap-Mechanic
+# MinePlay's Mods: Generators
