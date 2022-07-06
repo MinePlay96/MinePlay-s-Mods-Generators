@@ -5,7 +5,7 @@
 			"uuid": "713c3190-8726-4333-9213-897cfbb17cc0",
 			"showInInventory": true,
 			"renderable": "$SURVIVAL_DATA/Character/Char_Craftbot/char_craftbot.rend",
-			"color": "df7f01",
+			"color": "0000FF",
 			"hull": {
 				"x": 10,
 				"y": 8,
@@ -13,8 +13,8 @@
 				"col": "$SURVIVAL_DATA/Objects/Collision/char_craftbot_col.obj"
 			},
 			"scripted": {
-				"classname": "SolarPanel",
-				"filename": "$CONTENT_DATA/Scripts/SolarPanel.lua"
+				"classname": "SolarGenerator",
+				"filename": "$CONTENT_DATA/Scripts/SolarGenerator.lua"
 			},
 			"rotationSet": "PropY",
 			"sticky": "-Z+Y-Y+X-X",
