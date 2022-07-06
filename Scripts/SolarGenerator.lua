@@ -87,11 +87,11 @@ function SolarGenerator.sv_pipeNetworkUpdateRequired( self )
 end
 
 function SolarGenerator.sv_canSeeSky( self )
-	local raycastWidth = 2
+	local raycastRadius = 1
 	local raycastTarget = sm.vec3.new(0, 0, 100)
 	local raycastStart = self.shape.worldPosition
 
-	local hasBodyDetected = sm.physics.spherecast(self.shape.worldPosition, raycastTarget, raycastWidth)
+	local hasBodyDetected = sm.physics.spherecast(self.shape.worldPosition, raycastTarget, raycastRadius)
 
 	return not hasBodyDetected
 end
