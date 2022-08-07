@@ -8,6 +8,18 @@
             <Index name="713c3190-8726-4333-9213-897cfbb17cc0">
                 <Frame point="0 0"/>
             </Index>
+            <Index name="51bd054e-2b04-41b2-98e2-cad3bed2c456">
+                <Frame point="96 0"/>
+            </Index>
+            <Index name="47515dd6-d2de-4150-be6a-b07a9f5f7f6d">
+                <Frame point="192 0"/>
+            </Index>
+            <Index name="2580e198-870b-40e2-934d-a800b8161982">
+                <Frame point="288 0"/>
+            </Index>
+            <Index name="5f532897-ba61-4ad0-9263-f49132e42cb5">
+                <Frame point="384 0"/>
+            </Index>
         </Group>
     </Resource>
 </MyGUI>

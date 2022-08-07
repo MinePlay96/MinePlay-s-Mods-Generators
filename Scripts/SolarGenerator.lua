@@ -1,7 +1,9 @@
-dofile("$SURVIVAL_DATA/Scripts/game/survival_items.lua")
+dofile( "$SURVIVAL_DATA/Scripts/game/survival_items.lua" )
 dofile( "$SURVIVAL_DATA/Scripts/game/survival_shapes.lua" )
 dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
 dofile( "$SURVIVAL_DATA/Scripts/game/util/pipes.lua" )
+
+dofile( "$CONTENT_DATA/Scripts/items.lua" )
 
 DAYCYCLE_LIGHTING_TIMES = { 0, 3 / 24, 6 / 24, 18 / 24, 21 / 24, 1 }
 DAYCYCLE_LIGHTING_VALUES = { 0, 0, 0.5, 0.5, 1, 1 }
@@ -13,7 +15,52 @@ INTERNAL_BATTERY_POINTS_STORAGE = 200000
 
 SolarGenerator = class()
 
--- TODO: add ui
+local GeneratorLevels = {
+	[tostring(obj_solar_generator_01)] = {
+		gears = Gears,
+		effect = "SolarGenerator - Level 1",
+		upgrade = tostring(obj_solar_generator_02),
+		cost = 4,
+		generation = 4,
+		title = "#{LEVEL} 1",
+		pointsPerBattery = INTERNAL_BATTERY_POINTS_STORAGE
+	},
+	[tostring(obj_solar_generator_02)] = {
+		gears = Gears,
+		effect = "SolarGenerator - Level 2",
+		upgrade = tostring(obj_solar_generator_03),
+		cost = 6,
+		generation = 6,
+		title = "#{LEVEL} 2",
+		pointsPerBattery = INTERNAL_BATTERY_POINTS_STORAGE
+	},
+	[tostring(obj_solar_generator_03)] = {
+		gears = Gears,
+		effect = "SolarGenerator - Level 3",
+		upgrade = tostring(obj_solar_generator_04),
+		cost = 8,
+		generation = 9,
+		title = "#{LEVEL} 3",
+		pointsPerBattery = INTERNAL_BATTERY_POINTS_STORAGE
+	},
+	[tostring(obj_solar_generator_04)] = {
+		gears = Gears,
+		effect = "SolarGenerator - Level 4",
+		upgrade = tostring(obj_solar_generator_05),
+		cost = 10,
+		generation = 12,
+		title = "#{LEVEL} 4",
+		pointsPerBattery = INTERNAL_BATTERY_POINTS_STORAGE
+	},
+	[tostring(obj_solar_generator_05)] = {
+		gears = Gears,
+		effect = "SolarGenerator - Level 5",
+		title = "#{LEVEL} 5",
+		generation = 20,
+		pointsPerBattery = INTERNAL_BATTERY_POINTS_STORAGE
+	}
+}
+
 -- TODO: refactor client code
 
 --[[ Server ]]
@@ -27,6 +74,9 @@ function SolarGenerator.server_onCreate( self )
 	end
 	container:setFilters( { obj_consumable_battery } )
 
+	local level = GeneratorLevels[tostring( self.shape:getShapeUuid() )]
+	assert(level)
+	self.level = level
 
 	self:sv_init()
 end
@@ -145,9 +195,35 @@ function SolarGenerator.sv_generateBattery( self )
 	-- TODO: add ui | add check if no external container found use internal
 	local containerSearchResult = FindContainerToCollectTo( self.sv.connectedContainers, obj_consumable_battery, 1 )
 
-	if not containerSearchResult then
+	if containerSearchResult then
+		self:sv_sendBatteryToRemoteContainer(containerSearchResult)
+	else
+		self:sv_sendBatteryToLocalContainer()
+	end
+
+end
+
+function SolarGenerator.sv_sendBatteryToLocalContainer( self )
+
+	local container = self.shape.interactable:getContainer( 0 );
+
+	if sm.container.totalQuantity(container, obj_consumable_battery) >= 10 then
 		return
 	end
+
+	sm.container.beginTransaction()
+	sm.container.collect( container, obj_consumable_battery, 1, true )
+
+	if not sm.container.endTransaction() then
+		print('Error: container Battery move Transaction faild')
+	end
+
+	-- TODO: add upgrades and efficiency
+	self.sv.storage.internalBatteryPointsStorage = self.sv.storage.internalBatteryPointsStorage - BATTERY_POINTS_CREATION_COST
+	self:sv_markStorageDataAsDirty()
+end
+
+function SolarGenerator.sv_sendBatteryToRemoteContainer( self, containerSearchResult )
 
 	local container = containerSearchResult.shape:getInteractable():getContainer()
 
@@ -163,6 +239,7 @@ function SolarGenerator.sv_generateBattery( self )
 	self:sv_markStorageDataAsDirty()
 	
 	self.network:sendToClients( "cl_n_onCollectToChest", { shapesOnContainerPath = containerSearchResult.shapesOnContainerPath, itemId = obj_consumable_battery } )
+
 end
 
 function SolarGenerator.sv_saveSorageData( self )
@@ -238,21 +315,42 @@ function SolarGenerator.sv_buildPipeNetwork( self )
 	self:sv_markClientDataAsDirty()
 end
 
--- [[ Universal ]]
+function SolarGenerator.sv_n_tryUpgrade( self, _, player )
 
-function SolarGenerator.getInputs( self )
-	local parents = self.interactable:getParents()
-	local batteryContainer = nil
+	if self.level and self.level.upgrade then
+		local function fnUpgrade()
+			local nextLevel = GeneratorLevels[self.level.upgrade]
+			assert( nextLevel )
+		
+			self.network:sendToClients( "cl_n_onUpgrade", self.level.upgrade )
 
-	if parents[1] then
-		if parents[1]:hasOutputType( sm.interactable.connectionType.electricity ) then
-			batteryContainer = parents[1]:getContainer( 0 )
+			self.shape:replaceShape( sm.uuid.new( self.level.upgrade ) )
+			self.level = nextLevel
 		end
+
+		if sm.game.getEnableUpgrade() then
+			local inventory = player:getInventory()
+
+			if sm.container.totalQuantity( inventory, obj_consumable_component ) >= self.level.cost then
+
+				if sm.container.beginTransaction() then
+					sm.container.spend( inventory, obj_consumable_component, self.level.cost, true )
+
+					if sm.container.endTransaction() then
+						fnUpgrade()
+					end
+				end
+			else
+				print( "Cannot afford upgrade" )
+			end
+		end
+	else
+		print( "Can't be upgraded" )
 	end
 
-	return batteryContainer
-
 end
+
+-- [[ Universal ]]
 
 function SolarGenerator.getBatteryPointsGenerationByLightLevel( self, lightLevel )
 	-- TODO: add normal distribution function
@@ -264,6 +362,9 @@ end
 
 -- (Event) Called upon creation on client
 function SolarGenerator.client_onCreate( self )
+	local level = GeneratorLevels[tostring( self.shape:getShapeUuid() )]
+	self.level = level
+
 	self:cl_init()
 	-- TODO: add background buzze
 end
@@ -278,11 +379,92 @@ function SolarGenerator.client_onUpdate( self, deltaTime )
 	LightUpPipes( self.cl.pipeNetwork )
 	
 	self.cl.pipeEffectPlayer:update( deltaTime )
+
+	if self.gui then
+		-- self.gui:setSliderData('BatteryProgress', BATTERY_POINTS_CREATION_COST, 500)
+	end
 end
 
 -- (Event) Called when the server sends data to the client
 function SolarGenerator.client_onClientDataUpdate( self, data )
 	self.cl.pipeNetwork = data.pipeNetwork
+end
+
+function SolarGenerator.client_onDestroy( self )
+	if self.gui then
+		self.gui:close()
+		self.gui:destroy()
+		self.gui = nil
+	end
+end
+
+function SolarGenerator.client_onInteract( self, character, state )
+	if not state then
+		return
+	end
+
+	self.gui = sm.gui.createGuiFromLayout( "$CONTENT_DATA/Gui/Layouts/Solar_Generator.layout" )
+
+	self.gui:setText( "Name", "#{SOLAR_GENERATOR_TITLE}" )
+	self.gui:setText( "Interaction", "#{SOLAR_GENERATOR_INSTRUCTION}" )
+	self.gui:setText( "SubTitle", self.level.title )
+	self.gui:setIconImage( "Icon", self.shape:getShapeUuid() )
+	self.gui:setOnCloseCallback( "cl_onGuiClosed" )
+	self.gui:setButtonCallback( "Upgrade", "cl_onUpgradeClicked" )
+
+	self:cl_createFuelGrid()
+
+	if self.level then
+		if self.level.upgrade then
+			local nextLevel = GeneratorLevels[ self.level.upgrade ]
+			self.gui:setData( "UpgradeInfo", { Generation = nextLevel.generation } )
+			self.gui:setIconImage( "UpgradeIcon", sm.uuid.new( self.level.upgrade ) )
+		else
+			self.gui:setVisible( "UpgradeIcon", false )
+			self.gui:setData( "UpgradeInfo", nil )
+		end
+
+		if sm.game.getEnableUpgrade() and self.level.cost then
+			local inventory = sm.localPlayer.getPlayer():getInventory()
+			local availableKits = sm.container.totalQuantity( inventory, obj_consumable_component )
+			local upgradeData = { cost = self.level.cost, available = availableKits }
+			self.gui:setData( "Upgrade", upgradeData )
+			self.gui:setText( "UpgradeCost", availableKits .. "/" .. self.level.cost)
+		else
+			self.gui:setVisible( "Upgrade", false )
+		end
+
+		self.gui:setVisible( "MainPanelFuelUpgrade", true)
+		self.gui:setVisible( "MainPanelFuelNoUpgrade", false)
+	else
+		self.gui:setVisible( "MainPanelFuelUpgrade", false)
+		self.gui:setVisible( "MainPanelFuelNoUpgrade", true)
+	end
+
+	self.gui:open()
+end
+
+function SolarGenerator.cl_createFuelGrid( self )
+	local procGrid = {
+		type = "itemGrid",
+		layout = "$CONTENT_DATA/Gui/Layouts/Solar_Generator_FuelItemSlot.layout",
+		itemWidth = 98,
+		itemHeight = 116,
+		itemCount = 1,
+	}
+	self.gui:createGridFromJson( "FuelGrid", procGrid )
+	self.gui:setContainer( "Fuel", self.shape.interactable:getContainer( 0 ) )
+	-- self.cl.guiInterface:setGridButtonCallback( "Collect", "cl_onCollect" )
+end
+
+function SolarGenerator.cl_onUpgradeClicked( self, buttonName )
+	print( "upgrade clicked" )
+	self.network:sendToServer("sv_n_tryUpgrade", sm.localPlayer.getPlayer() )
+end
+
+function SolarGenerator.cl_onGuiClosed( self )
+	self.gui:destroy()
+	self.gui = nil
 end
 
 function SolarGenerator.cl_init( self )
@@ -303,4 +485,35 @@ function SolarGenerator.cl_n_onCollectToChest( self, params )
 	table.insert( params.shapesOnContainerPath, 1, startNode)
 
 	self.cl.pipeEffectPlayer:pushShapeEffectTask( params.shapesOnContainerPath, params.itemId )
+end
+
+function SolarGenerator.cl_n_onUpgrade( self, upgrade )
+	local nextLevel = GeneratorLevels[upgrade]
+
+	if self.gui and self.gui:isActive() then
+		self.gui:setIconImage( "Icon", sm.uuid.new( upgrade ) )
+
+		if sm.game.getEnableUpgrade() and nextLevel.cost then
+			local inventory = sm.localPlayer.getPlayer():getInventory()
+			local availableKits = sm.container.totalQuantity( inventory, obj_consumable_component )
+			local upgradeData = { cost = nextLevel.cost, available = availableKits }
+			self.gui:setData( "Upgrade", upgradeData )
+		else
+			self.gui:setVisible( "Upgrade", false )
+		end
+
+		self.gui:setText( "SubTitle", nextLevel.title )
+		if self.level.upgrade then
+			self.gui:setData( "UpgradeInfo", { Generation = nextLevel.generation } )
+			self.gui:setIconImage( "UpgradeIcon", sm.uuid.new( self.level.upgrade ) )
+		else
+			self.gui:setVisible( "UpgradeIcon", false )
+			self.gui:setData( "UpgradeInfo", nil )
+		end
+	end
+
+	self.effect = sm.effect.createEffect( nextLevel.effect, self.interactable )
+	sm.effect.playHostedEffect( "Part - Upgrade", self.interactable )
+
+	self.level = nextLevel
 end

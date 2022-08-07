@@ -1,0 +1,5 @@
+obj_solar_generator_01 = sm.uuid.new( "713c3190-8726-4333-9213-897cfbb17cc0" )
+obj_solar_generator_02 = sm.uuid.new( "51bd054e-2b04-41b2-98e2-cad3bed2c456" )
+obj_solar_generator_03 = sm.uuid.new( "47515dd6-d2de-4150-be6a-b07a9f5f7f6d" )
+obj_solar_generator_04 = sm.uuid.new( "2580e198-870b-40e2-934d-a800b8161982" )
+obj_solar_generator_05 = sm.uuid.new( "5f532897-ba61-4ad0-9263-f49132e42cb5" )

@@ -1,0 +1,2 @@
+﻿SOLAR_GENERATOR_TITLE Solar Generator
+SOLAR_GENERATOR_INSTRUCTION Generates Batterys if it is exposet to the sky
